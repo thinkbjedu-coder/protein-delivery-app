@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロテイン納品書</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+    </div>
+
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-card glass-panel">
+            <h2><i class="fa-solid fa-lock"></i> ログイン</h2>
+            <p>パスワードを入力してください</p>
+            <form id="loginForm">
+                <input type="password" id="passwordInput" placeholder="Password" required>
+                <button type="submit" class="btn btn-primary">ログイン</button>
+            </form>
+            <p id="loginError" class="error-msg"></p>
+        </div>
+    </div>
+
+    <div class="app-container" id="appContainer" style="display: none;">
+        <header class="app-header">
+            <div class="logo-area">
+                <i class="fa-solid fa-box-open"></i>
+                <h1>Protein Delivery</h1>
+            </div>
+            <button id="exportCsvBtn" class="btn btn-secondary">
+                <i class="fa-solid fa-download"></i> CSV出力
+            </button>
+        </header>
+
+        <main>
+            <section class="action-bar">
+                <button id="newEntryBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-plus"></i> 新規伝票作成
+                </button>
+                <div class="filters">
+                    <select id="filterStatus">
+                        <option value="">全ての状態</option>
+                        <option value="作成済み">作成済み</option>
+                        <option value="受領済み">受領済み</option>
+                    </select>
+                    <select id="filterSite">
+                        <option value="">全ての入庫先</option>
+                    </select>
+                </div>
+            </section>
+
+            <section class="delivery-list-container">
+                <div class="table-header">
+                    <div>伝票番号</div>
+                    <div>状態</div>
+                    <div>入庫先</div>
+                    <div>品目</div>
+                    <div>受領</div>
+                    <div>受領日</div>
+                    <div>削除</div>
+                </div>
+                <div id="deliveryList" class="delivery-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="entryModal" class="modal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>新規納品書作成</h2>
+                <button class="close-btn" id="closeEntryModal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form id="entryForm">
+                <div class="form-group">
+                    <label>出庫元</label>
+                    <input type="text" value="本部" readonly class="input-readonly">
+                </div>
+                <div class="form-group">
+                    <label>入庫先 <span style="color: #ef4444;">*</span></label>
+                    <select name="to_site" required>
+                        <option value="">選択してください</option>
+                        <option value="リハビリフィットネス大永寺">リハビリフィットネス大永寺</option>
+                        <option value="リハビリフィットネス守山">リハビリフィットネス守山</option>
+                        <option value="リハビリフィットネス旭">リハビリフィットネス旭</option>
+                        <option value="リハビリフィットネス長久手">リハビリフィットネス長久手</option>
+                        <option value="Co.メディカルフィットネス旭">Co.メディカルフィットネス旭</option>
+                        <option value="Life Up 可児">Life Up 可児</option>
+                        <option value="Think Life守山">Think Life守山</option>
+                        <option value="Think Life大曽根">Think Life大曽根</option>
+                        <option value="Think Life旭">Think Life旭</option>
+                        <option value="Life Up 訪問看護ステーション可児">Life Up 訪問看護ステーション可児</option>
+                        <option value="訪問看護ステーション守山">訪問看護ステーション守山</option>
+                        <option value="訪問看護ステーション旭">訪問看護ステーション旭</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>品目（複数選択可）<span style="color: #ef4444; margin-left: 0.5rem;">*必須</span></label>
+                    <p style="font-size: 0.875rem; color: #94a3b8; margin: 0.5rem 0 1rem 0;">
+                        ✓ チェックボックスを選択し、袋数を入力してください
+                    </p>
+                    <div class="item-checkboxes">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="item" value="base">
+                            <span>base</span>
+                            <input type="number" class="qty-input" min="1" placeholder="袋数">
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="item" value="アルミオ">
+                            <span>アルミオ</span>
+                            <input type="number" class="qty-input" min="1" placeholder="袋数">
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="item" value="ソウル（日向夏）">
+                            <span>ソウル（日向夏）</span>
+                            <input type="number" class="qty-input" min="1" placeholder="袋数">
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="item" value="ソウル（ストロベリー）">
+                            <span>ソウル（ストロベリー）</span>
+                            <input type="number" class="qty-input" min="1" placeholder="袋数">
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="item" value="マッスル">
+                            <span>マッスル</span>
+                            <input type="number" class="qty-input" min="1" placeholder="袋数">
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>備考</label>
+                    <textarea name="note" rows="3"></textarea>
+                </div>
+                <div id="entryError" class="error-msg"
+                    style="color: #ef4444; margin-bottom: 1rem; white-space: pre-wrap;">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelEntryBtn">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">作成する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="receiveModal" class="modal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>受領確認</h2>
+                <button class="close-btn" id="closeReceiveModal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form id="receiveForm">
+                <input type="hidden" id="receiveId">
+                <p style="margin-bottom: 1rem;">以下の伝票を受領しますか?</p>
+                <div class="form-group">
+                    <label>受取人名 (署名)</label>
+                    <input type="text" id="receiverName" required placeholder="名前を入力してください">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelReceiveBtn">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">受領する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js?v=2"></script>
+</body>
+
+</html>
