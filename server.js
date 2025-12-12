@@ -30,7 +30,7 @@ app.get('/api/branches', (req, res) => {
 // 送付記録の作成
 app.post('/api/deliveries', async (req, res) => {
     try {
-        const { date, fromBranch, toBranch, type, items } = req.body;
+        const { date, fromBranch, toBranch, type, items, note } = req.body;
 
         // バリデーション
         if (!date || !fromBranch || !toBranch || !type || !items || items.length === 0) {
@@ -42,7 +42,8 @@ app.post('/api/deliveries', async (req, res) => {
             fromBranch,
             toBranch,
             type,
-            items
+            items,
+            note
         });
 
         res.status(201).json({
