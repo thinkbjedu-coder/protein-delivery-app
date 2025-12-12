@@ -53,7 +53,7 @@ app.post('/api/deliveries', async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating delivery:', error);
-        res.status(500).json({ error: 'サーバーエラーが発生しました' });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -72,7 +72,7 @@ app.get('/api/deliveries', async (req, res) => {
         res.json(deliveries);
     } catch (error) {
         console.error('Error fetching deliveries:', error);
-        res.status(500).json({ error: 'サーバーエラーが発生しました' });
+        res.status(500).json({ error: error.message });
     }
 });
 
