@@ -661,29 +661,30 @@ window.toggleReceive = async function (id, checkbox) {
         alert('通信エラー');
         checkbox.checked = false;
     }
+};
 
 
-    // Delete Delivery
-    window.deleteDelivery = async function (id) {
-        if (!confirm('このデータを削除しますか?')) {
-            return;
+// Delete Delivery
+window.deleteDelivery = async function (id) {
+    if (!confirm('このデータを削除しますか?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/deliveries/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            alert('送付記録を削除しました');
+            const applyFilterBtn = document.getElementById('apply-filter-btn');
+            if (applyFilterBtn) applyFilterBtn.click();
+        } else {
+            const result = await response.json();
+            alert('エラー: ' + result.error);
         }
-
-        try {
-            const response = await fetch(`${API_BASE}/deliveries/${id}`, {
-                method: 'DELETE'
-            });
-
-            if (response.ok) {
-                alert('送付記録を削除しました');
-                const applyFilterBtn = document.getElementById('apply-filter-btn');
-                if (applyFilterBtn) applyFilterBtn.click();
-            } else {
-                const result = await response.json();
-                alert('エラー: ' + result.error);
-            }
-        } catch (error) {
-            console.error('Error deleting delivery:', error);
-            alert(`削除に失敗しました: ${error.message}`);
-        }
-    };
+    } catch (error) {
+        console.error('Error deleting delivery:', error);
+        alert(`削除に失敗しました: ${error.message}`);
+    }
+};
