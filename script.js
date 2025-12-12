@@ -625,13 +625,7 @@ window.viewDetail = async function (id) {
 window.toggleReceive = async function (id, checkbox) {
     if (!checkbox.checked) return; // Ignore uncheck? Usually once received, it's done.
 
-    // 1. Confirm action
-    if (!confirm('受領確認を行います。よろしいですか？\n（この操作は取り消せません）')) {
-        checkbox.checked = false;
-        return;
-    }
-
-    // 2. Prompt for Receiver Name
+    // 1. Prompt for Receiver Name directly (Confirmation removed as requested)
     const receiverName = prompt('受領者の氏名を入力してください:');
     if (!receiverName || receiverName.trim() === '') {
         alert('受領者名が入力されていないため、キャンセルしました。');
