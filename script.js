@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const itemList = document.getElementById('item-list');
     const addItemBtn = document.getElementById('add-item-btn');
     const saveBtn = document.getElementById('save-btn');
+    const noteInput = document.getElementById('note-input');
     const printBtn = document.getElementById('print-btn');
 
     const filterStatusSelect = document.getElementById('filter-status');
