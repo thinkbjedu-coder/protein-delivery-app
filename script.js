@@ -241,33 +241,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
         itemList.appendChild(row);
         row.querySelector('.item-name').focus();
-        // Clear existing options first (except default)
-        toBranchSelect.innerHTML = '<option value="" disabled selected>拠点を選択してください</option>';
-        filterBranchSelect.innerHTML = '<option value="">全て</option>';
-        receiveFilterBranchSelect.innerHTML = '<option value="">全て</option>';
-
-        branches.forEach(branch => {
-            if (branch === '本部') return; // Exclude 本部 from To list
-
-            const optionTo = document.createElement('option');
-            optionTo.value = branch;
-            optionTo.textContent = branch;
-            toBranchSelect.appendChild(optionTo);
-
-            const optionFilter = document.createElement('option');
-            optionFilter.value = branch;
-            optionFilter.textContent = branch;
-            filterBranchSelect.appendChild(optionFilter);
-
-            const optionReceiveFilter = document.createElement('option');
-            optionReceiveFilter.value = branch;
-            optionReceiveFilter.textContent = branch;
-            receiveFilterBranchSelect.appendChild(optionReceiveFilter);
-        });
-    } catch (error) {
-        console.error('Error loading branches:', error);
     }
-}
+
+    // Load Branches
+    async function loadBranches() {
+        try {
+            // Check if we are in mock/local mode where API might not be running or different
+            // But for now assuming standard API
+            const response = await fetch(`${API_BASE}/branches`);
+            if (!response.ok) throw new Error('Failed to fetch branches');
+            const branches = await response.json();
+
+            // Clear existing options first (except default)
+            toBranchSelect.innerHTML = '<option value="" disabled selected>拠点を選択してください</option>';
+            filterBranchSelect.innerHTML = '<option value="">全て</option>';
+            receiveFilterBranchSelect.innerHTML = '<option value="">全て</option>';
+
+            branches.forEach(branch => {
+                if (branch === '本部') return; // Exclude 本部 from To list
+
+                const optionTo = document.createElement('option');
+                optionTo.value = branch;
+                optionTo.textContent = branch;
+                toBranchSelect.appendChild(optionTo);
+
+                const optionFilter = document.createElement('option');
+                optionFilter.value = branch;
+                optionFilter.textContent = branch;
+                filterBranchSelect.appendChild(optionFilter);
+
+                const optionReceiveFilter = document.createElement('option');
+                optionReceiveFilter.value = branch;
+                optionReceiveFilter.textContent = branch;
+                receiveFilterBranchSelect.appendChild(optionReceiveFilter);
+            });
+        } catch (error) {
+            console.error('Error loading branches:', error);
+        }
+    }
 
     // Update Date
     function updateDate() {
