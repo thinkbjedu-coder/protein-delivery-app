@@ -148,14 +148,14 @@ document.addEventListener('DOMContentLoaded', () => {
             tab.classList.toggle('active', tab.dataset.view === view);
         });
 
-        if (view === 'create') {
-            createView.style.display = 'block';
-            historyView.style.display = 'none';
-            receiveView.style.display = 'none';
-        } else if (view === 'history') {
-            createView.style.display = 'none';
-            historyView.style.display = 'block';
-            receiveView.style.display = 'none';
+        document.querySelectorAll('.app-main').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        document.querySelector(`.${view}-view`).style.display = 'block';
+
+        // Auto-load data based on view
+        if (view === 'history') {
             loadHistory();
         } else if (view === 'receive') {
             createView.style.display = 'none';
