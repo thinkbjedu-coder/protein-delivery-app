@@ -621,31 +621,39 @@ window.viewDetail = async function (id) {
 };
 
 // Checkbox Receive Action
+// Checkbox Receive Action
 window.toggleReceive = async function (id, checkbox) {
     if (!checkbox.checked) return; // Ignore uncheck? Usually once received, it's done.
 
+    // 1. Confirm action
     if (!confirm('受領確認を行います。よろしいですか？\n（この操作は取り消せません）')) {
         checkbox.checked = false;
         return;
     }
 
+    // 2. Prompt for Receiver Name
+    const receiverName = prompt('受領者の氏名を入力してください:');
+    if (!receiverName || receiverName.trim() === '') {
+        alert('受領者名が入力されていないため、キャンセルしました。');
+        checkbox.checked = false;
+        return;
+    }
+
     try {
-        // Automatically send current time/date implied by server or logical "now"
-        // Also assuming "Received By" is generic or not needed as per check
         const response = await fetch(`${API_BASE}/deliveries/${id}/receive`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ receivedBy: '受領チェック' }) // Generic placeholder for logic compatibility
+            body: JSON.stringify({ receivedBy: receiverName })
         });
 
         if (response.ok) {
-            // alert('受領を確認しました');
-            // Refresh list (remove the item)
-            // It's cleaner to just reload the whole list
+            alert('受領を確認しました');
+            // Refresh list
             const applyReceiveFilterBtn = document.getElementById('apply-receive-filter-btn');
             if (applyReceiveFilterBtn) applyReceiveFilterBtn.click();
         } else {
-            alert('エラーが発生しました');
+            const result = await response.json();
+            alert('エラーが発生しました: ' + (result.error || 'Unknown error'));
             checkbox.checked = false;
         }
     } catch (error) {
@@ -653,6 +661,23 @@ window.toggleReceive = async function (id, checkbox) {
         alert('通信エラー');
         checkbox.checked = false;
     }
+};
+
+if (response.ok) {
+    // alert('受領を確認しました');
+    // Refresh list (remove the item)
+    // It's cleaner to just reload the whole list
+    const applyReceiveFilterBtn = document.getElementById('apply-receive-filter-btn');
+    if (applyReceiveFilterBtn) applyReceiveFilterBtn.click();
+} else {
+    alert('エラーが発生しました');
+    checkbox.checked = false;
+}
+    } catch (error) {
+    console.error('Error receiving:', error);
+    alert('通信エラー');
+    checkbox.checked = false;
+}
 };
 
 // Delete Delivery
