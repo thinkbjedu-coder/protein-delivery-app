@@ -1,0 +1,31 @@
+{
+  "deliveries": [
+    {
+      "id": 5,
+      "date": "2025/11/28(金)",
+      "from_branch": "法人本部",
+      "to_branch": "Think Life旭",
+      "type": "送付状",
+      "status": "received",
+      "created_at": "2025-11-28T02:45:15.374Z",
+      "received_at": "2025-11-28T04:44:32.037Z",
+      "received_by": "test"
+    }
+  ],
+  "deliveryItems": [
+    {
+      "id": 7,
+      "delivery_id": 5,
+      "item_name": "test",
+      "quantity": 1
+    },
+    {
+      "id": 8,
+      "delivery_id": 5,
+      "item_name": "asdf",
+      "quantity": 22
+    }
+  ],
+  "nextDeliveryId": 6,
+  "nextItemId": 9
+}
