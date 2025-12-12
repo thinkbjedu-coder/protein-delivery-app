@@ -453,6 +453,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
+            // Debug: Start
+            // console.log('Starting loadHistory...');
+
             const params = new URLSearchParams();
             if (filters.branch) params.append('branch', filters.branch);
             if (filters.status) params.append('status', filters.status);
@@ -463,6 +466,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`Server returned ${response.status}`);
             }
             const deliveries = await response.json();
+
+            // Debug: Show count
+            // alert(`履歴取得成功: ${deliveries.length}件`);
 
             if (!Array.isArray(deliveries)) {
                 console.error('Expected array but got:', deliveries);
@@ -535,6 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderReceiveList(deliveries);
         } catch (error) {
             console.error('Error loading receive list:', error);
+            alert(`受領リスト読み込みエラー: ${error.message}`);
         }
     }
 
