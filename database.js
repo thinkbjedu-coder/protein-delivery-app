@@ -29,6 +29,8 @@ async function initDatabase() {
         `);
         // Add note column if it doesn't exist (for existing tables)
         await client.query(`ALTER TABLE deliveries ADD COLUMN IF NOT EXISTS note TEXT;`);
+        // Add items column if it doesn't exist (critical fix for production DB)
+        await client.query(`ALTER TABLE deliveries ADD COLUMN IF NOT EXISTS items JSONB;`);
     } finally {
         client.release();
     }
