@@ -1,230 +1,148 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
+const path = require('path');
 const db = require('./database');
-const { syncToSheet } = require('./sheets');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const PORT = process.env.PORT || 3000;
 
+// ミドルウェア
 app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static('public'));
+app.use(express.json());
+app.use(express.static(__dirname));
 
-// Health check endpoint for cloud services
-app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: NODE_ENV
-    });
+// データベース初期化
+db.initDatabase().catch(err => console.error('Database initialization failed:', err));
+
+// API エンドポイント
+
+// 事業所一覧の取得
+app.get('/api/branches', (req, res) => {
+    try {
+        const branches = db.getBranches();
+        res.json(branches);
+    } catch (error) {
+        console.error('Error fetching branches:', error);
+        res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    }
 });
 
-// Generate ID: YYYYMMDD-###
-function generateId(callback) {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const datePrefix = `${yyyy}${mm}${dd}`;
+// 送付記録の作成
+app.post('/api/deliveries', async (req, res) => {
+    try {
+        const { date, fromBranch, toBranch, type, items } = req.body;
 
-    db.get(`SELECT id FROM deliveries WHERE id LIKE ? ORDER BY id DESC LIMIT 1`, [`${datePrefix}-%`], (err, row) => {
-        if (err) {
-            callback(err, null);
-            return;
+        // バリデーション
+        if (!date || !fromBranch || !toBranch || !type || !items || items.length === 0) {
+            return res.status(400).json({ error: '必須項目が不足しています' });
         }
-        let nextNum = 1;
-        if (row) {
-            const parts = row.id.split('-');
-            if (parts.length === 2) {
-                nextNum = parseInt(parts[1], 10) + 1;
+
+        const deliveryId = await db.createDelivery({
+            date,
+            fromBranch,
+            toBranch,
+            type,
+            items
+        });
+
+        res.status(201).json({
+            success: true,
+            deliveryId,
+            message: '送付記録を作成しました'
+        });
+    } catch (error) {
+        console.error('Error creating delivery:', error);
+        res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    }
+});
+
+// 送付記録の一覧取得
+app.get('/api/deliveries', async (req, res) => {
+    try {
+        const filters = {
+            branch: req.query.branch,
+            status: req.query.status,
+            dateFrom: req.query.dateFrom,
+            dateTo: req.query.dateTo,
+            search: req.query.search
+        };
+
+        const deliveries = await db.getDeliveries(filters);
+        res.json(deliveries);
+    } catch (error) {
+        console.error('Error fetching deliveries:', error);
+        res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    }
+});
+
+// 特定の送付記録を取得
+app.get('/api/deliveries/:id', async (req, res) => {
+    try {
+        const delivery = await db.getDeliveryById(req.params.id);
+        if (!delivery) {
+            return res.status(404).json({ error: '送付記録が見つかりません' });
+        }
+        res.json(delivery);
+    } catch (error) {
+        console.error('Error fetching delivery:', error);
+        res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    }
+});
+
+// 受領確認
+app.put('/api/deliveries/:id/receive', async (req, res) => {
+    try {
+        const { receivedBy } = req.body;
+        const result = await db.markAsReceived(req.params.id, receivedBy);
+        if (result.changes === 0) {
+            return res.status(404).json({ error: '送付記録が見つかりません' });
+        }
+        res.json({
+            success: true,
+            message: '受領確認を完了しました'
+        });
+    } catch (error) {
+        console.error('Error marking as received:', error);
+        res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    }
+});
+
+// 送付記録の削除
+app.delete('/api/deliveries/:id', async (req, res) => {
+    try {
+        const result = await db.deleteDelivery(req.params.id);
+        if (result.changes === 0) {
+            return res.status(404).json({ error: '送付記録が見つかりません' });
+        }
+        res.json({
+            success: true,
+            message: '送付記録を削除しました'
+        });
+    } catch (error) {
+        console.error('Error deleting delivery:', error);
+        res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    }
+});
+
+// サーバー起動 (Vercel以外の環境)
+if (!process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`サーバーが起動しました: http://localhost:${PORT}`);
+        const networkInterfaces = require('os').networkInterfaces();
+        const addresses = [];
+        for (const name of Object.keys(networkInterfaces)) {
+            for (const net of networkInterfaces[name]) {
+                if (net.family === 'IPv4' && !net.internal) {
+                    addresses.push(net.address);
+                }
             }
         }
-        const newId = `${datePrefix}-${String(nextNum).padStart(3, '0')}`;
-        callback(null, newId);
+        if (addresses.length > 0) {
+            console.log(`ネットワークからアクセス: http://${addresses[0]}:${PORT}`);
+        }
+        console.log('Ctrl+C で終了します');
     });
 }
 
-// GET all deliveries
-app.get('/api/deliveries', (req, res) => {
-    db.all(`SELECT * FROM deliveries ORDER BY created_at DESC`, [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        // Parse items JSON for each row
-        const parsed = rows.map(row => {
-            try {
-                row.items = JSON.parse(row.items || '[]');
-            } catch (e) {
-                row.items = [];
-            }
-            return row;
-        });
-        res.json(parsed);
-    });
-});
-
-// POST new delivery
-app.post('/api/deliveries', (req, res) => {
-    const { to_site, items, note } = req.body; // items is array: [{item, qty}, ...]
-    generateId((err, newId) => {
-        if (err) {
-            res.status(500).json({ error: "Failed to generate ID" });
-            return;
-        }
-        const itemsJson = JSON.stringify(items);
-        const stmt = db.prepare(`INSERT INTO deliveries (id, from_site, to_site, items, note, created_at) VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'))`);
-        stmt.run(newId, '本部', to_site, itemsJson, note, function (err) {
-            if (err) {
-                res.status(500).json({ error: err.message });
-                return;
-            }
-            const newRecord = {
-                id: newId,
-                status: '作成済み',
-                from_site: '本部',
-                to_site,
-                items,
-                received_check: 0,
-                received_at: null,
-                note,
-                created_at: new Date().toISOString()
-            };
-            syncToSheet(newRecord).catch(console.error);
-
-            res.json(newRecord);
-        });
-        stmt.finalize();
-    });
-});
-
-// POST login
-app.post('/api/login', (req, res) => {
-    const { password } = req.body;
-    if (password === 'think0305') {
-        res.json({ success: true });
-    } else {
-        res.status(401).json({ success: false, message: 'Invalid password' });
-    }
-});
-
-// PATCH receive
-app.patch('/api/deliveries/:id/receive', (req, res) => {
-    const { id } = req.params;
-    const { receiver_name } = req.body;
-    const received_at = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-    db.run(`UPDATE deliveries SET status = ?, received_check = 1, received_at = ?, receiver_name = ? WHERE id = ?`,
-        ['受領済み', received_at, receiver_name, id],
-        function (err) {
-            if (err) {
-                res.status(500).json({ error: err.message });
-                return;
-            }
-            db.get(`SELECT * FROM deliveries WHERE id = ?`, [id], (err, row) => {
-                if (!err && row) {
-                    syncToSheet(row).catch(console.error);
-                }
-                res.json({ message: "Received", received_at, receiver_name });
-            });
-        }
-    );
-});
-
-// GET CSV export (must be before :id routes to avoid route conflicts)
-app.get('/api/export/csv', (req, res) => {
-    db.all(`SELECT * FROM deliveries ORDER BY created_at DESC`, [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
-        // CSV Header
-        let csv = '伝票番号,状態,出庫元,入庫先,品目,受領チェック,受領日,受取人,備考,作成日時\n';
-
-        rows.forEach(row => {
-            // Parse items if it's JSON
-            let itemsDisplay = '';
-            try {
-                const items = JSON.parse(row.items || '[]');
-                itemsDisplay = items.map(i => `${i.item}(${i.qty}袋)`).join('; ');
-            } catch (e) {
-                // Fallback for old format
-                itemsDisplay = `${row.item || ''}(${row.qty || 0}袋)`;
-            }
-
-            csv += `${row.id},${row.status},${row.from_site},${row.to_site},"${itemsDisplay}","${row.received_check ? 'はい' : 'いいえ'}",${row.received_at || ''},${row.receiver_name || ''},"${(row.note || '').replace(/"/g, '""')}",${row.created_at}\n`;
-        });
-
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', 'attachment; filename=deliveries.csv');
-        res.send('\uFEFF' + csv); // BOM for Excel UTF-8
-    });
-});
-
-// DELETE delivery
-app.delete('/api/deliveries/:id', (req, res) => {
-    const { id } = req.params;
-
-    db.run(`DELETE FROM deliveries WHERE id = ?`, [id], function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        if (this.changes === 0) {
-            res.status(404).json({ error: 'Delivery not found' });
-            return;
-        }
-        res.json({ message: 'Deleted successfully' });
-    });
-});
-
-const server = app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Environment: ${NODE_ENV}`);
-});
-
-// Global error handlers
-process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
-    // Log the error but don't exit immediately in production
-    if (NODE_ENV !== 'production') {
-        process.exit(1);
-    }
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // Log the error but don't exit in production
-});
-
-// Graceful shutdown
-const gracefulShutdown = (signal) => {
-    console.log(`\n${signal} received. Starting graceful shutdown...`);
-
-    server.close(() => {
-        console.log('HTTP server closed');
-
-        // Close database connection
-        db.close((err) => {
-            if (err) {
-                console.error('Error closing database:', err);
-                process.exit(1);
-            }
-            console.log('Database connection closed');
-            process.exit(0);
-        });
-    });
-
-    // Force shutdown after 10 seconds
-    setTimeout(() => {
-        console.error('Forced shutdown after timeout');
-        process.exit(1);
-    }, 10000);
-};
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+// Vercel用にエクスポート
+module.exports = app;

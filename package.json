@@ -1,22 +1,23 @@
 {
-  "name": "protein-delivery-app",
+  "name": "delivery-management-system",
   "version": "1.0.0",
-  "description": "Protein delivery tracking application",
+  "description": "社内便物品管理システム",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
   },
-  "engines": {
-    "node": ">=14.0.0"
-  },
-  "dependencies": {
-    "body-parser": "^2.2.1",
-    "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "googleapis": "^166.0.0",
-    "sqlite3": "^5.1.7"
-  },
+  "keywords": [
+    "delivery",
+    "management",
+    "internal"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "pg": "^8.11.3"
+  }
 }
+```
