@@ -27,6 +27,8 @@ async function initDatabase() {
                 note TEXT
             );
         `);
+        // Add note column if it doesn't exist (for existing tables)
+        await client.query(`ALTER TABLE deliveries ADD COLUMN IF NOT EXISTS note TEXT;`);
     } finally {
         client.release();
     }
@@ -37,13 +39,14 @@ async function createDelivery(deliveryData) {
     const client = await pool.connect();
     try {
         const { date, fromBranch, toBranch, type, items } = deliveryData;
+        const itemsJson = JSON.stringify(items);
 
         // 送付記録を追加
         const deliveryResult = await client.query(
-            `INSERT INTO deliveries (date, from_branch, to_branch, type, status, note, created_at)
-             VALUES ($1, $2, $3, $4, 'sent', $5, NOW())
+            `INSERT INTO deliveries (date, from_branch, to_branch, type, items, status, note, created_at)
+             VALUES ($1, $2, $3, $4, $5, 'sent', $6, NOW())
              RETURNING id`,
-            [date, fromBranch, toBranch, type, deliveryData.note || '']
+            [date, fromBranch, toBranch, type, itemsJson, deliveryData.note || '']
         );
         const deliveryId = deliveryResult.rows[0].id;
 
