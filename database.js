@@ -1,15 +1,80 @@
-const { Pool } = require('pg');
+// const { Pool } = require('pg'); // Only require if available
+const fs = require('fs');
+const path = require('path');
+
+let Pool;
+try {
+    const pg = require('pg');
+    Pool = pg.Pool;
+} catch (e) {
+    console.log('pg module not found, proceeding with mock DB only.');
+    Pool = class MockPool { constructor() { } connect() { } }; // Dummy
+}
 
 const isProduction = process.env.NODE_ENV === 'production';
 const connectionString = process.env.DATABASE_URL;
 
-const pool = new Pool({
-    connectionString: isProduction ? connectionString : undefined,
-    ssl: isProduction ? { rejectUnauthorized: false } : false
-});
+let pool;
+let isMock = false;
+let mockDeliveries = []; // In-memory DB for local testing
+const DATA_FILE = path.join(__dirname, 'deliveries.json');
+
+// Load mock data from file
+function loadMockData() {
+    try {
+        if (fs.existsSync(DATA_FILE)) {
+            const data = fs.readFileSync(DATA_FILE, 'utf8');
+            if (data.trim() === '') {
+                mockDeliveries = [];
+            } else {
+                mockDeliveries = JSON.parse(data);
+                if (!Array.isArray(mockDeliveries)) {
+                    console.warn(`Warning: ${DATA_FILE} does not contain an array. Initializing as empty.`);
+                    mockDeliveries = [];
+                }
+            }
+            console.log(`Loaded ${mockDeliveries.length} deliveries from ${DATA_FILE}`);
+        } else {
+            mockDeliveries = [];
+            console.log('No deliveries.json found, starting with empty data.');
+        }
+    } catch (error) {
+        console.error('Error loading mock data:', error);
+        mockDeliveries = [];
+    }
+}
+
+// Save mock data to file
+function saveMockData() {
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(mockDeliveries, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving mock data:', error);
+    }
+}
+
+if (connectionString && Pool) {
+    pool = new Pool({
+        connectionString: connectionString,
+        ssl: isProduction ? { rejectUnauthorized: false } : false
+    });
+
+} else {
+    // Fallback logic
+    if (process.env.RENDER || process.env.NODE_ENV === 'production') {
+        console.error('CRITICAL ERROR: DATABASE_URL is not set in production environment!');
+        // We DO NOT want to silently fall back to local file in production as data will be lost.
+        // However, to avoid crashing immediately if user is just testing, we log heavily.
+    }
+
+    console.log('No DATABASE_URL found or pg missing. Using local file persistence.');
+    isMock = true;
+    loadMockData();
+}
 
 // データベース初期化
 async function initDatabase() {
+    if (isMock) return; // No init needed for array
     const client = await pool.connect();
     try {
         await client.query(`
@@ -38,6 +103,31 @@ async function initDatabase() {
 
 // 送付記録の作成
 async function createDelivery(deliveryData) {
+    if (isMock) {
+        // Generate new ID (find max ID + 1)
+        const maxId = mockDeliveries.reduce((max, d) => Math.max(max, d.id || 0), 0);
+        const id = maxId + 1;
+
+        // Save with snake_case to match Postgres schema and Frontend expectations
+        const newDelivery = {
+            id,
+            date: deliveryData.date,
+            from_branch: deliveryData.fromBranch,
+            to_branch: deliveryData.toBranch,
+            type: deliveryData.type,
+            items: deliveryData.items,
+            status: 'sent',
+            note: deliveryData.note || '',
+            created_at: new Date().toISOString(),
+            received_at: null,
+            received_by: null
+        };
+
+        mockDeliveries.push(newDelivery);
+        saveMockData();
+        return id;
+    }
+
     const client = await pool.connect();
     try {
         const { date, fromBranch, toBranch, type, items } = deliveryData;
@@ -60,6 +150,23 @@ async function createDelivery(deliveryData) {
 
 // 送付記録の一覧取得
 async function getDeliveries(filters) {
+    if (isMock) {
+        let results = [...mockDeliveries];
+
+        if (filters.branch) {
+            results = results.filter(d => d.from_branch === filters.branch || d.to_branch === filters.branch);
+        }
+        if (filters.status) {
+            results = results.filter(d => d.status === filters.status);
+        }
+        if (filters.search) {
+            // Simple mock search
+            results = results.filter(d => JSON.stringify(d.items).includes(filters.search));
+        }
+        // Descending order by ID (proxy for time)
+        return results.sort((a, b) => b.id - a.id);
+    }
+
     const client = await pool.connect();
     try {
         let query = `SELECT * FROM deliveries WHERE 1=1`;
@@ -95,6 +202,10 @@ async function getDeliveries(filters) {
 
 // 特定の送付記録を取得
 async function getDeliveryById(id) {
+    if (isMock) {
+        return mockDeliveries.find(d => d.id == id);
+    }
+
     const client = await pool.connect();
     try {
         const result = await client.query('SELECT * FROM deliveries WHERE id = $1', [id]);
@@ -106,6 +217,18 @@ async function getDeliveryById(id) {
 
 // 受領確認
 async function markAsReceived(id, name) {
+    if (isMock) {
+        const delivery = mockDeliveries.find(d => d.id == id);
+        if (delivery) {
+            delivery.status = 'received';
+            delivery.received_at = new Date().toISOString();
+            delivery.received_by = name;
+            saveMockData();
+            return { rowCount: 1 };
+        }
+        return { rowCount: 0 };
+    }
+
     const client = await pool.connect();
     try {
         const result = await client.query(
@@ -122,6 +245,16 @@ async function markAsReceived(id, name) {
 
 // 送付記録の削除
 async function deleteDelivery(id) {
+    if (isMock) {
+        const idx = mockDeliveries.findIndex(d => d.id == id);
+        if (idx !== -1) {
+            mockDeliveries.splice(idx, 1);
+            saveMockData();
+            return { rowCount: 1 };
+        }
+        return { rowCount: 0 };
+    }
+
     const client = await pool.connect();
     try {
         const result = await client.query('DELETE FROM deliveries WHERE id = $1', [id]);

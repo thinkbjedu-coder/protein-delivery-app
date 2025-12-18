@@ -120,26 +120,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event Listeners
     function setupEventListeners() {
-        navTabs.forEach(tab => {
-            tab.addEventListener('click', () => switchView(tab.dataset.view));
-        });
+        if (navTabs) {
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', () => switchView(tab.dataset.view));
+            });
+        }
 
-        addItemBtn.addEventListener('click', addItemRow);
-        saveBtn.addEventListener('click', saveDelivery);
-        printBtn.addEventListener('click', printDelivery);
-        applyFilterBtn.addEventListener('click', loadHistory);
-        applyReceiveFilterBtn.addEventListener('click', loadReceiveList);
-        modalClose.addEventListener('click', closeModal);
-        modalCloseReceiver.addEventListener('click', closeReceiverModal);
-        confirmReceiveBtn.addEventListener('click', window.confirmReceive);
+        if (addItemBtn) addItemBtn.addEventListener('click', addItemRow);
+        if (saveBtn) saveBtn.addEventListener('click', saveDelivery);
+        if (printBtn) printBtn.addEventListener('click', printDelivery);
+        if (applyFilterBtn) applyFilterBtn.addEventListener('click', loadHistory);
+        if (applyReceiveFilterBtn) applyReceiveFilterBtn.addEventListener('click', loadReceiveList);
+        if (modalClose) modalClose.addEventListener('click', closeModal);
+        if (modalCloseReceiver) modalCloseReceiver.addEventListener('click', closeReceiverModal);
+        if (confirmReceiveBtn) confirmReceiveBtn.addEventListener('click', window.confirmReceive);
 
-        detailModal.addEventListener('click', (e) => {
-            if (e.target === detailModal) closeModal();
-        });
+        if (detailModal) {
+            detailModal.addEventListener('click', (e) => {
+                if (e.target === detailModal) closeModal();
+            });
+        }
 
-        receiverModal.addEventListener('click', (e) => {
-            if (e.target === receiverModal) closeReceiverModal();
-        });
+        if (receiverModal) {
+            receiverModal.addEventListener('click', (e) => {
+                if (e.target === receiverModal) closeReceiverModal();
+            });
+        }
     }
 
     // View Switching
@@ -172,10 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const branches = await response.json();
 
             branches.forEach(branch => {
-                const optionFrom = document.createElement('option');
-                optionFrom.value = branch;
-                optionFrom.textContent = branch;
-
+                // toBranchSelect, filterBranchSelect, receiveFilterBranchSelect は select 要素
                 const optionTo = document.createElement('option');
                 optionTo.value = branch;
                 optionTo.textContent = branch;
@@ -184,20 +187,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 optionFilter.value = branch;
                 optionFilter.textContent = branch;
 
-                // 法人本部をデフォルトに設定
-                if (branch === '法人本部') {
-                    optionFrom.selected = true;
+                const optionReceiveFilter = document.createElement('option');
+                optionReceiveFilter.value = branch;
+                optionReceiveFilter.textContent = branch;
+
+                if (toBranchSelect) toBranchSelect.appendChild(optionTo);
+                if (filterBranchSelect) filterBranchSelect.appendChild(optionFilter);
+                if (receiveFilterBranchSelect) receiveFilterBranchSelect.appendChild(optionReceiveFilter);
+
+                // fromBranchSelect は input 要素の場合があるため、select の場合のみ appendChild する
+                if (fromBranchSelect && fromBranchSelect.tagName === 'SELECT') {
+                    const optionFrom = document.createElement('option');
+                    optionFrom.value = branch;
+                    optionFrom.textContent = branch;
+                    if (branch === '本部') {
+                        optionFrom.selected = true;
+                    }
+                    fromBranchSelect.appendChild(optionFrom);
+                } else if (fromBranchSelect && fromBranchSelect.tagName === 'INPUT') {
+                    // input の場合は値を固定 (HTML側で設定されているはずだが念のため)
+                    if (branch === '本部') {
+                        fromBranchSelect.value = '本部';
+                    }
                 }
-
-                fromBranchSelect.appendChild(optionFrom);
-                toBranchSelect.appendChild(optionTo);
-                filterBranchSelect.appendChild(optionFilter);
-
-                // 受領確認ビュー用のフィルターにも追加
-                const optionReceiveFilter = document.createElement('option');
-                optionReceiveFilter.value = branch;
-                optionReceiveFilter.textContent = branch;
-                receiveFilterBranchSelect.appendChild(optionReceiveFilter);
             });
         } catch (error) {
             console.error('Error loading branches:', error);
@@ -212,94 +224,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const d = now.getDate().toString().padStart(2, '0');
         const day = ['日', '月', '火', '水', '木', '金', '土'][now.getDay()];
         const dateStr = `${y}/${m}/${d}(${day})`;
-        currentDateEl.textContent = dateStr;
+        if (currentDateEl) currentDateEl.textContent = dateStr;
     }
 
     // Add Item Row
     function addItemRow() {
         const row = document.createElement('div');
         row.className = 'item-row';
-        row.innerHTML = `
-            <input type="text" placeholder="品名を入力" class="item-name">
-            <input type="number" placeholder="1" value="1" min="1" class="item-qty">
-            <button class="btn-remove" title="削除">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        `;
-
-        row.querySelector('.btn-remove').addEventListener('click', () => {
-            if (itemList.children.length > 1) {
-                row.remove();
-            } else {
-                row.querySelector('.item-name').value = '';
-                row.querySelector('.item-qty').value = '1';
-            }
-        });
-
-        itemList.appendChild(row);
-        row.querySelector('.item-name').focus();
-    }
-
-    // Load Branches
-    async function loadBranches() {
-        try {
-            // Check if we are in mock/local mode where API might not be running or different
-            // But for now assuming standard API
-            const response = await fetch(`${API_BASE}/branches`);
-            if (!response.ok) throw new Error('Failed to fetch branches');
-            const branches = await response.json();
-
-            // Clear existing options first (except default)
-            toBranchSelect.innerHTML = '<option value="" disabled selected>拠点を選択してください</option>';
-            filterBranchSelect.innerHTML = '<option value="">全て</option>';
-            receiveFilterBranchSelect.innerHTML = '<option value="">全て</option>';
-
-            branches.forEach(branch => {
-                if (branch === '本部') return; // Exclude 本部 from To list
-
-                const optionTo = document.createElement('option');
-                optionTo.value = branch;
-                optionTo.textContent = branch;
-                toBranchSelect.appendChild(optionTo);
-
-                const optionFilter = document.createElement('option');
-                optionFilter.value = branch;
-                optionFilter.textContent = branch;
-                filterBranchSelect.appendChild(optionFilter);
-
-                const optionReceiveFilter = document.createElement('option');
-                optionReceiveFilter.value = branch;
-                optionReceiveFilter.textContent = branch;
-                receiveFilterBranchSelect.appendChild(optionReceiveFilter);
-            });
-        } catch (error) {
-            console.error('Error loading branches:', error);
-        }
-    }
-
-    // Update Date
-    function updateDate() {
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = (now.getMonth() + 1).toString().padStart(2, '0');
-        const d = now.getDate().toString().padStart(2, '0');
-        const day = ['日', '月', '火', '水', '木', '金', '土'][now.getDay()];
-        const dateStr = `${y}/${m}/${d}(${day})`;
-        currentDateEl.textContent = dateStr;
-    }
-
-    // Add Item Row
-    function addItemRow() {
-        const row = document.createElement('div');
-        row.className = 'item-row';
-        // Updated for Protein List
         row.innerHTML = `
             <select class="item-name">
                 <option value="" disabled selected>品名を選択</option>
-                <option value="base">base</option>
+                <option value="base（ココア）">base（ココア）</option>
+                <option value="base（ほうじ茶）">base（ほうじ茶）</option>
                 <option value="アルミオ">アルミオ</option>
                 <option value="ソウル（日向夏）">ソウル（日向夏）</option>
                 <option value="ソウル（ストロベリー）">ソウル（ストロベリー）</option>
@@ -447,9 +383,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load History
     async function loadHistory() {
         const filters = {
-            branch: filterBranchSelect.value,
-            status: filterStatusSelect.value,
-            search: filterSearchInput.value
+            branch: filterBranchSelect ? filterBranchSelect.value : '',
+            status: filterStatusSelect ? filterStatusSelect.value : '',
+            search: filterSearchInput ? filterSearchInput.value : ''
         };
 
         try {
@@ -466,9 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`Server returned ${response.status}`);
             }
             const deliveries = await response.json();
-
-            // Debug: Show count
-            // alert(`履歴取得成功: ${deliveries.length}件`);
 
             if (!Array.isArray(deliveries)) {
                 console.error('Expected array but got:', deliveries);
@@ -501,22 +434,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? delivery.items.map(i => `${i.name}(${i.quantity})`).join(', ')
                 : (delivery.items || '-');
 
-            // Format Received Date
             const receivedDate = delivery.received_at
                 ? new Date(delivery.received_at).toLocaleDateString()
                 : '-';
 
-            tr.innerHTML = `
-                <td>${delivery.date}</td>
-                <td>${delivery.to_branch}</td>
-                <td><div class="truncate-text" title="${itemsText}">${itemsText}</div></td>
-                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                <td>${receivedDate}</td>
-                <td>
-                    <button class="btn btn-small btn-secondary-action" onclick="viewDetail(${delivery.id})">詳細</button>
-                    ${delivery.status !== 'received' ? `<button class="btn btn-small btn-danger" onclick="deleteDelivery(${delivery.id})">削除</button>` : ''}
-                </td>
+            const tdDate = document.createElement('td');
+            tdDate.setAttribute('data-label', '日付');
+            tdDate.textContent = delivery.date;
+
+            const tdBranch = document.createElement('td');
+            tdBranch.setAttribute('data-label', '入庫先');
+            tdBranch.textContent = delivery.to_branch;
+
+            const tdItems = document.createElement('td');
+            tdItems.setAttribute('data-label', '品目');
+            tdItems.innerHTML = `<div class="truncate-text" title="${itemsText}">${itemsText}</div>`;
+
+            const tdStatus = document.createElement('td');
+            tdStatus.setAttribute('data-label', '状態');
+            tdStatus.innerHTML = `<span class="status-badge ${statusClass}">${statusText}</span>`;
+
+            const tdReceivedDate = document.createElement('td');
+            tdReceivedDate.setAttribute('data-label', '受領日');
+            tdReceivedDate.textContent = receivedDate;
+
+            const tdAction = document.createElement('td');
+            tdAction.setAttribute('data-label', '操作');
+            tdAction.innerHTML = `
+                <button class="btn btn-small btn-secondary-action" onclick="viewDetail(${delivery.id})">詳細</button>
+                ${delivery.status !== 'received' ? `<button class="btn btn-small btn-danger" onclick="deleteDelivery(${delivery.id})">削除</button>` : ''}
             `;
+
+            tr.appendChild(tdDate);
+            tr.appendChild(tdBranch);
+            tr.appendChild(tdItems);
+            tr.appendChild(tdStatus);
+            tr.appendChild(tdReceivedDate);
+            tr.appendChild(tdAction);
             historyTbody.appendChild(tr);
         });
     }
@@ -524,9 +478,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load Receive List
     async function loadReceiveList() {
         const filters = {
-            branch: receiveFilterBranchSelect.value,
+            branch: receiveFilterBranchSelect ? receiveFilterBranchSelect.value : '',
             status: 'sent', // Only show unreceived
-            // search: receiveFilterSearchInput.value
         };
 
         try {
@@ -562,23 +515,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? delivery.items.map(i => `${i.name} × ${i.quantity}`).join('<br>')
                 : (delivery.items || '-');
 
-            tr.innerHTML = `
-                <td>${delivery.date}</td>
-                <td>${delivery.from_branch}</td>
-                <td>${delivery.to_branch}</td>
-                <td>${itemsText}</td>
-                <td>
-                    <!-- Checkbox style button -->
-                    <label class="custom-checkbox-container">
-                        <input type="checkbox" onchange="toggleReceive(${delivery.id}, this)">
-                        <span class="checkmark"></span>
-                        受領チェック
-                    </label>
-                </td>
-                <td>
-                    <button class="btn btn-small btn-secondary-action" onclick="viewDetail(${delivery.id})">詳細</button>
-                </td>
+            const tdDate = document.createElement('td');
+            tdDate.setAttribute('data-label', '日付');
+            tdDate.textContent = delivery.date;
+
+            const tdFrom = document.createElement('td');
+            tdFrom.setAttribute('data-label', '出庫元');
+            tdFrom.textContent = delivery.from_branch;
+
+            const tdTo = document.createElement('td');
+            tdTo.setAttribute('data-label', '入庫先');
+            tdTo.textContent = delivery.to_branch;
+
+            const tdItems = document.createElement('td');
+            tdItems.setAttribute('data-label', '品目');
+            tdItems.innerHTML = itemsText;
+
+            const tdCheck = document.createElement('td');
+            tdCheck.setAttribute('data-label', '受領');
+            tdCheck.innerHTML = `
+                <label class="custom-checkbox-container">
+                    <input type="checkbox" onchange="toggleReceive(${delivery.id}, this)">
+                    <span class="checkmark"></span>
+                    受領チェック
+                </label>
             `;
+
+            const tdAction = document.createElement('td');
+            tdAction.setAttribute('data-label', '操作');
+            tdAction.innerHTML = `<button class="btn btn-small btn-secondary-action" onclick="viewDetail(${delivery.id})">詳細</button>`;
+
+            tr.appendChild(tdDate);
+            tr.appendChild(tdFrom);
+            tr.appendChild(tdTo);
+            tr.appendChild(tdItems);
+            tr.appendChild(tdCheck);
+            tr.appendChild(tdAction);
             receiveTbody.appendChild(tr);
         });
     }

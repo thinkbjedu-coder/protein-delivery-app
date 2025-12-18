@@ -95,7 +95,7 @@ app.put('/api/deliveries/:id/receive', async (req, res) => {
     try {
         const { receivedBy } = req.body;
         const result = await db.markAsReceived(req.params.id, receivedBy);
-        if (result.changes === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: '送付記録が見つかりません' });
         }
         res.json({
@@ -112,7 +112,7 @@ app.put('/api/deliveries/:id/receive', async (req, res) => {
 app.delete('/api/deliveries/:id', async (req, res) => {
     try {
         const result = await db.deleteDelivery(req.params.id);
-        if (result.changes === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({ error: '送付記録が見つかりません' });
         }
         res.json({

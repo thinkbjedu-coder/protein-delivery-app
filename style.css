@@ -549,34 +549,143 @@ textarea:focus {
 
 /* Responsive */
 @media (max-width: 768px) {
-    .control-panel {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+    body {
+        font-size: 16px; /* モバイルで入力時にズームしないように */
     }
 
-    .filter-row {
-        grid-template-columns: 1fr;
-    }
-
-    .action-section {
-        grid-template-columns: 1fr;
-    }
-
-    .table-header {
-        display: none;
-    }
-
-    .item-row {
-        grid-template-columns: 1fr auto auto;
-        background: #f3f4f6;
-        padding: 0.75rem;
-        border-radius: 0.5rem;
+    .app-container {
+        padding: 0.5rem;
     }
 
     .header-content {
         flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
+        gap: 0.75rem;
+        align-items: center;
+        text-align: center;
+    }
+
+    .nav-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0;
+        width: 100%;
+        margin-top: 1rem;
+        background: #eee;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    .nav-tab {
+        padding: 0.8rem 0.2rem;
+        font-size: 0.85rem;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+    }
+
+    .nav-tab.active {
+        background: #fff;
+        border-bottom-color: var(--primary-color);
+    }
+
+    .control-panel {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+        gap: 1.25rem;
+    }
+
+    /* Table to Card conversion for mobile */
+    .history-table thead {
+        display: none; /* ヘッダーを隠す */
+    }
+
+    .history-table, .history-table tbody, .history-table tr, .history-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .history-table tr {
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .history-table td {
+        text-align: right;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #efefef;
+        position: relative;
+        padding-left: 40%;
+    }
+
+    .history-table td:last-child {
+        border-bottom: none;
+    }
+
+    .history-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 35%;
+        font-weight: 700;
+        text-align: left;
+        color: var(--text-muted);
+    }
+
+    /* Adjust specific tables */
+    #receive-tbody td::before, #history-tbody td::before {
+        display: inline-block;
+    }
+
+    /* Row improvements in creation view */
+    .item-section .table-header {
+        display: none;
+    }
+
+    .item-row {
+        grid-template-columns: 1fr 80px 44px;
+        gap: 0.5rem;
+        background: #f9fafb;
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 0.5rem;
+        border-radius: 0.5rem;
+        align-items: center;
+    }
+
+    .item-qty {
+        padding: 0.5rem;
+        text-align: center;
+    }
+
+    .btn-remove {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .action-section {
+        grid-template-columns: 1fr;
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        padding: 1rem 0;
+        border-top: 1px solid #eee;
+        z-index: 10;
+    }
+
+    .btn {
+        padding: 1rem;
+        font-size: 1.1rem;
+        height: auto;
+    }
+
+    .btn-secondary {
+        margin-bottom: 0.5rem;
     }
 }
 

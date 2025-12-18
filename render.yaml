@@ -7,3 +7,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - fromDatabase:
+          name: delivery-db
+          property: connectionString
+
+databases:
+  - name: delivery-db
+    plan: free

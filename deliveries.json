@@ -1,31 +1,64 @@
-{
-  "deliveries": [
-    {
-      "id": 5,
-      "date": "2025/11/28(金)",
-      "from_branch": "法人本部",
-      "to_branch": "Think Life旭",
-      "type": "送付状",
-      "status": "received",
-      "created_at": "2025-11-28T02:45:15.374Z",
-      "received_at": "2025-11-28T04:44:32.037Z",
-      "received_by": "test"
-    }
-  ],
-  "deliveryItems": [
-    {
-      "id": 7,
-      "delivery_id": 5,
-      "item_name": "test",
-      "quantity": 1
-    },
-    {
-      "id": 8,
-      "delivery_id": 5,
-      "item_name": "asdf",
-      "quantity": 22
-    }
-  ],
-  "nextDeliveryId": 6,
-  "nextItemId": 9
-}
+[
+  {
+    "id": 1,
+    "date": "2025/12/18(木)",
+    "from_branch": "本部",
+    "to_branch": "リハビリフィットネス守山",
+    "type": "納品書",
+    "items": [
+      {
+        "name": "base",
+        "quantity": 10
+      }
+    ],
+    "status": "received",
+    "note": "Final Verification Test",
+    "created_at": "2025-12-18T05:40:37.510Z",
+    "received_at": "2025-12-18T05:53:12.718Z",
+    "received_by": "Verified User"
+  },
+  {
+    "id": 2,
+    "date": "2025/12/18(木)",
+    "from_branch": "本部",
+    "to_branch": "リハビリフィットネス大永寺",
+    "type": "納品書",
+    "items": [
+      {
+        "name": "base",
+        "quantity": 1
+      },
+      {
+        "name": "アルミオ",
+        "quantity": 1
+      }
+    ],
+    "status": "received",
+    "note": "",
+    "created_at": "2025-12-18T05:56:18.651Z",
+    "received_at": "2025-12-18T05:56:43.834Z",
+    "received_by": "test"
+  },
+  {
+    "id": 4,
+    "date": "2025/12/18(木)",
+    "from_branch": "本部",
+    "to_branch": "リハビリフィットネス旭",
+    "type": "納品書",
+    "items": [
+      {
+        "name": "アルミオ",
+        "quantity": 1
+      },
+      {
+        "name": "base（ほうじ茶）",
+        "quantity": 15
+      }
+    ],
+    "status": "received",
+    "note": "",
+    "created_at": "2025-12-18T06:33:40.531Z",
+    "received_at": "2025-12-18T06:33:59.258Z",
+    "received_by": "test"
+  }
+]
