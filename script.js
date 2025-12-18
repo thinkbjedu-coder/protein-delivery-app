@@ -241,7 +241,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <option value="ソウル（ストロベリー）">ソウル（ストロベリー）</option>
                 <option value="マッスル">マッスル</option>
             </select>
-            <input type="number" placeholder="1" value="1" min="1" class="item-qty">
+            <select class="item-qty">
+                ${Array.from({ length: 20 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('')}
+            </select>
             <button class="btn-remove" title="削除">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -462,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tdAction.setAttribute('data-label', '操作');
             tdAction.innerHTML = `
                 <button class="btn btn-small btn-secondary-action" onclick="viewDetail(${delivery.id})">詳細</button>
-                ${delivery.status !== 'received' ? `<button class="btn btn-small btn-danger" onclick="deleteDelivery(${delivery.id})">削除</button>` : ''}
+                <button class="btn btn-small btn-danger" onclick="deleteDelivery(${delivery.id})">削除</button>
             `;
 
             tr.appendChild(tdDate);
