@@ -4,7 +4,7 @@ const API_BASE = window.location.hostname === 'localhost' || window.location.hos
     : `${window.location.origin}/api`;
 
 // パスワード設定
-const CORRECT_PASSWORD = 'think0305';
+const CORRECT_PASSWORD = '0305';
 const AUTH_TOKEN_KEY = 'delivery_app_auth';
 
 let currentReceiveId = null; // 受領確認中のID
