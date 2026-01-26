@@ -151,6 +151,7 @@ async function createDelivery(deliveryData) {
 // 送付記録の一覧取得
 async function getDeliveries(filters) {
     if (isMock) {
+        console.log('Using mock database, filters:', filters);
         let results = [...mockDeliveries];
 
         if (filters.branch) {
@@ -167,10 +168,12 @@ async function getDeliveries(filters) {
         return results.sort((a, b) => b.id - a.id);
     }
 
+    let query = '';
+    let params = [];
     const client = await pool.connect();
     try {
-        let query = `SELECT * FROM deliveries WHERE 1=1`;
-        const params = [];
+        query = `SELECT * FROM deliveries WHERE 1=1`;
+        params = [];
         let paramIndex = 1;
 
         if (filters.branch) {
@@ -193,8 +196,19 @@ async function getDeliveries(filters) {
 
         query += ` ORDER BY created_at DESC`;
 
+        console.log('Executing query:', query);
+        console.log('With params:', params);
+
         const result = await client.query(query, params);
+        console.log(`Query returned ${result.rows.length} rows`);
         return result.rows;
+    } catch (error) {
+        console.error('Database query error:', error);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        if (query) console.error('Query was:', query);
+        if (params && params.length > 0) console.error('Params were:', params);
+        throw error;
     } finally {
         client.release();
     }

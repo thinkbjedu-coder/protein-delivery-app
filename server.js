@@ -68,11 +68,14 @@ app.get('/api/deliveries', async (req, res) => {
             search: req.query.search
         };
 
+        console.log('Fetching deliveries with filters:', filters);
         const deliveries = await db.getDeliveries(filters);
+        console.log(`Successfully fetched ${deliveries.length} deliveries`);
         res.json(deliveries);
     } catch (error) {
         console.error('Error fetching deliveries:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ error: error.message || 'サーバーエラーが発生しました' });
     }
 });
 

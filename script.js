@@ -164,9 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (view === 'history') {
             loadHistory();
         } else if (view === 'receive') {
-            createView.style.display = 'none';
-            historyView.style.display = 'none';
-            receiveView.style.display = 'block';
             loadReceiveList();
         }
     }
@@ -391,9 +388,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            // Debug: Start
-            // console.log('Starting loadHistory...');
-
             const params = new URLSearchParams();
             if (filters.branch) params.append('branch', filters.branch);
             if (filters.status) params.append('status', filters.status);
@@ -401,19 +395,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const response = await fetch(`${API_BASE}/deliveries?${params}`);
             if (!response.ok) {
-                throw new Error(`Server returned ${response.status}`);
+                throw new Error(`サーバーエラー (${response.status})`);
             }
             const deliveries = await response.json();
 
             if (!Array.isArray(deliveries)) {
                 console.error('Expected array but got:', deliveries);
-                throw new Error('Invalid data format received from server');
+                throw new Error('データ形式が不正です');
             }
 
             renderHistory(deliveries);
         } catch (error) {
             console.error('Error loading history:', error);
-            alert(`履歴の読み込みに失敗しました: ${error.message}`);
+            // エラー時も空のデータとして表示
+            renderHistory([]);
+            // ユーザーフレンドリーなエラーメッセージ
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                alert('サーバーに接続できません。ネットワーク接続を確認してください。');
+            } else {
+                alert(`履歴の読み込みに失敗しました: ${error.message}`);
+            }
         }
     }
 
@@ -489,14 +490,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (filters.branch) params.append('branch', filters.branch);
             params.append('status', filters.status);
 
+            console.log('Fetching receive list with params:', params.toString());
             const response = await fetch(`${API_BASE}/deliveries?${params}`);
-            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                console.error('Server error response:', errorData);
+                throw new Error(`サーバーエラー (${response.status}): ${errorData.error || 'Unknown error'}`);
+            }
             const deliveries = await response.json();
+            console.log('Received deliveries:', deliveries);
+
+            if (!Array.isArray(deliveries)) {
+                console.error('Expected array but got:', deliveries);
+                throw new Error('データ形式が不正です');
+            }
 
             renderReceiveList(deliveries);
         } catch (error) {
             console.error('Error loading receive list:', error);
-            alert(`受領リスト読み込みエラー: ${error.message}`);
+            // エラー時も空のデータとして表示
+            renderReceiveList([]);
+            // ユーザーフレンドリーなエラーメッセージ
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                alert('サーバーに接続できません。ネットワーク接続を確認してください。');
+            } else {
+                alert(`受領リスト読み込みエラー: ${error.message}`);
+            }
         }
     }
 
