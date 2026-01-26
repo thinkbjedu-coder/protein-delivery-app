@@ -612,7 +612,14 @@ window.viewDetail = async function (id) {
                 </ul>
             </div>
             ${delivery.note ? `<div style="margin-bottom: 1rem;"><strong>備考:</strong><br>${delivery.note}</div>` : ''}
-            ${delivery.received_at ? `<div style="margin-bottom: 0.5rem;"><strong>受領日時:</strong> ${new Date(delivery.received_at).toLocaleString('ja-JP')}</div>` : ''}
+            ${delivery.received_at ? `
+                <div style="margin-bottom: 0.5rem;">
+                    <strong>受領日時:</strong> ${new Date(delivery.received_at).toLocaleString('ja-JP')}
+                </div>
+                <div style="margin-bottom: 0.5rem;">
+                    <strong>受領者:</strong> ${delivery.received_by || '不明'}
+                </div>
+            ` : ''}
         `;
 
         detailModal.classList.add('active');
